@@ -85,7 +85,6 @@ func handleExternalReqs(w http.ResponseWriter, r *http.Request) {
 	id := strings.Split(r.URL.Path, "/")[1]
 	Path := r.URL.Path
 	if id == "favicon.ico" {
-		log.Println("Ignoring favicon request.")
 		return
 	}
 	log.Println("Making req to -> " + id)

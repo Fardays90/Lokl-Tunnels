@@ -40,7 +40,7 @@ func listenForMessages(conn *websocket.Conn) {
 		return
 	}
 	fmt.Println("Tunnel has been set up.")
-	fmt.Println("Your link: http://localhost:8080/" + sentId.Id)
+	fmt.Println("Your link: https://reverse-proxy-tunnel.onrender.com/" + sentId.Id)
 	for {
 		var req HTTPReq
 		err := conn.ReadJSON(&req)
@@ -81,8 +81,7 @@ func listenForMessages(conn *websocket.Conn) {
 func main() {
 	fmt.Scanf("http --port %s", &myport)
 	fmt.Printf("Port: %s \n", myport)
-	conn, _, err := websocket.DefaultDialer.Dial("ws://localhost:8080/connect", nil)
-
+	conn, _, err := websocket.DefaultDialer.Dial("wss://reverse-proxy-tunnel.onrender.com/connect", nil)
 	if err != nil {
 		fmt.Println("Websocket connection failed err: " + err.Error())
 		return

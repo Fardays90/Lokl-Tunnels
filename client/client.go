@@ -50,7 +50,6 @@ func listenForMessages(conn *websocket.Conn) {
 		}
 		pathWithoutId := strings.Split(req.Path, "/")[2]
 		URL := "http://localhost:" + myport + "/" + pathWithoutId
-		fmt.Println(URL)
 		localRequest, err := http.NewRequest(req.Method, URL, bytes.NewReader(req.Body))
 		if err != nil {
 			fmt.Println("Error trying to construct the http request err:" + err.Error())
@@ -75,7 +74,7 @@ func listenForMessages(conn *websocket.Conn) {
 			fmt.Println("Error trying to write json to server err: " + err.Error())
 			break
 		}
-		fmt.Printf("Got the request %s %s", localRequest.Method, URL)
+		fmt.Printf("Got the request %s %s \n", localRequest.Method, URL)
 	}
 }
 

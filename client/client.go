@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/websocket"
 )
@@ -50,6 +51,7 @@ func tunnelClient() {
 	fmt.Println("Make requests to this as the starter to reach your endpoint.")
 }
 func listenForMessages(conn *websocket.Conn) {
+	fmt.Println("Waiting for requests")
 	for {
 		var req HTTPReq
 		err := conn.ReadJSON(&req)
@@ -57,7 +59,10 @@ func listenForMessages(conn *websocket.Conn) {
 			fmt.Println("Error trying to read the json sent from server")
 			break
 		}
-		localRequest, err := http.NewRequest(req.Method, "http://localhost:"+myport+req.Path, bytes.NewReader(req.Body))
+		pathWithoutId := strings.Split(req.Path, "/")[2]
+		URL := "http://localhost:" + myport + pathWithoutId
+		fmt.Println(URL)
+		localRequest, err := http.NewRequest(req.Method, URL, bytes.NewReader(req.Body))
 		if err != nil {
 			fmt.Println("Error trying to construct the http request err:" + err.Error())
 			return
@@ -81,14 +86,15 @@ func listenForMessages(conn *websocket.Conn) {
 			fmt.Println("Error trying to write json to server err: " + err.Error())
 			break
 		}
+		fmt.Printf("Got the request %s %s", localRequest.Method, localRequest.URL.Path)
 	}
 }
 
 func main() {
 	fmt.Scanf("http --port %s", &myport)
 	fmt.Printf("Port: %s", myport)
-	tunnelClient()
-	conn, _, err := websocket.DefaultDialer.Dial("ws://localhost:8080/"+myId, nil)
+	// tunnelClient()
+	conn, _, err := websocket.DefaultDialer.Dial("ws://localhost:8080/connect", nil)
 	if err != nil {
 		fmt.Println("Websocket connection failed err: " + err.Error())
 		return

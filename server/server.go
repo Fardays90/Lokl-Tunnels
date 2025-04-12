@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -18,21 +17,21 @@ var connections = make(map[string]*websocket.Conn)
 var charset = "abcdefghijklmnoqprstyxz1234567890"
 var serverPort string
 var upgrader = websocket.Upgrader{}
-var channels = make(map[string] chan HTTPRes)
-var pendingResponses = sync.Map{};
-type HTTPReq struct{
-	ID string `json:"id"`
-	Method string `json:"method"`
-	Body []byte `json:"body"`
-	Path string `json:"path"`
+var pendingResponses = sync.Map{}
+
+type HTTPReq struct {
+	ID      string              `json:"id"`
+	Method  string              `json:"method"`
+	Body    []byte              `json:"body"`
+	Path    string              `json:"path"`
 	Headers map[string][]string `json:"headers"`
 }
 
-type HTTPRes struct{
-	ID string `json:"id"`
-	StatusCode string `json:"status_code"`
-	Body []byte `json:"body"`
-	Headers map[string][]string `json:"headers"`
+type HTTPRes struct {
+	ID         string              `json:"id"`
+	StatusCode int                 `json:"status_code"`
+	Body       []byte              `json:"body"`
+	Headers    map[string][]string `json:"headers"`
 }
 
 func generateRandomId(length int) string {
@@ -42,88 +41,78 @@ func generateRandomId(length int) string {
 	}
 	return string(id)
 }
-
-func waitForResponse(id string){
-	ch, ok := pendingResponses.Load(id);
-	if !ok{
-		log.Println("Internal Sever Error occured")
+func handleTunnelClient(w http.ResponseWriter, r *http.Request) {
+	// if r.Method != "POST" {
+	// 	log.Println("Please send a post request ")
+	// 	return
+	// }
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		fmt.Println("Error trying to upgrade http connection to websocket err:" + err.Error())
 		return
 	}
-	select{
-
-	}
-}
-
-func handleTunnelClient(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w,r,nil);
-	if err != nil{
-		fmt.Println("Error trying to upgrade http connection to websocket err:"+err.Error());
-		return;
-	}
-	uniqueId := generateRandomId(5);
-	connections[uniqueId] = conn;
-	fmt.Println("Tunnel has been made between aea and http://localhost:"+targetPort);
-	fmt.Println("Your path is http://localhost"+serverPort+"/"+uniqueId+"/");
-	for{
-		var req HTTPReq;
-		err := conn.ReadJSON(&req);
-		if err != nil{
-			fmt.Println("Error trying to read the json from websocket server err:"+err.Error());
-			break;
+	uniqueId := generateRandomId(5)
+	connections[uniqueId] = conn
+	log.Println("Tunnel has been made between aea and http://localhost:" + targetPort)
+	log.Println("Your path is http://localhost" + serverPort + "/" + uniqueId + "/")
+	// uniqueIdBytes := []byte(uniqueId)
+	// w.Write(uniqueIdBytes)
+	for {
+		var response HTTPRes
+		err := conn.ReadJSON(&response)
+		if err != nil {
+			fmt.Println("Error trying to read the json err: " + err.Error())
+			break
 		}
-		path := req.Path;
-		client := &http.Client{};
-		convertedToHTTP, err := http.NewRequest(req.Method, "http://localhost:"+targetPort+path, bytes.NewReader(req.Body));
-		if err != nil{
-			fmt.Println("Error trying to convert json to http request err:"+err.Error());
+		val, ok := pendingResponses.Load(response.ID)
+		if !ok {
+			fmt.Println("No pending response channel found for ID: ", response.ID)
 			continue
 		}
-		resp, err := client.Do(convertedToHTTP);
-		if err != nil{
-			fmt.Println("Error trying to make the http request to tunnel client err:"+err.Error());
+		responseChannel, ok := val.(chan HTTPRes)
+		if !ok {
+			fmt.Println("Pending response is not a channel for ID: ", response.ID)
+			continue
 		}
-		bodyBytes, err := io.ReadAll(resp.Body);
-		if err != nil{
-			fmt.Println("Error trying to read response body from the client tunnel err:"+err.Error());
-			continue;
-		}
-		defer resp.Body.Close();
-		localResponse := HTTPRes{ID: req.ID, StatusCode: resp.StatusCode, Body: bodyBytes, Headers: resp.Header};
-		err = conn.WriteJSON(localResponse);
-		if err != nil{
-			fmt.Println("Error while trying to write json to websocket server from tunnel client err:"+err.Error());
-			break;
-		}
+		responseChannel <- response
+		pendingResponses.Delete(response.ID)
 	}
 }
 func handleExternalReqs(w http.ResponseWriter, r *http.Request) {
 	id := strings.Split(r.URL.Path, "/")[1]
 	Path := r.URL.Path
-	log.Println("Making req to -> " + id);
-	tunnelToFind, found := connections[id];
-	if !found{
-		log.Println("Tunnel does not exist or wrong id");
+	log.Println("Making req to -> " + id)
+	tunnelToFind, found := connections[id]
+	if !found {
+		log.Println("Tunnel does not exist or wrong id")
 		return
 	}
-	method := r.Method;
-	bodyBytes, err := io.ReadAll(r.Body);
-	if err != nil{
-		log.Println("Error reading request body err:"+err.Error())
+	method := r.Method
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Println("Error reading request body err:" + err.Error())
 		return
 	}
 	defer r.Body.Close()
-	requestHeaders := r.Header;
-	clientReq := HTTPReq{ID: id, Method: method, Body:bodyBytes, Path: Path, Headers: requestHeaders}
-	responseChan := make(chan HTTPRes);
-	pendingResponses.Store(clientReq.ID, responseChan);
-	tunnelToFind.WriteJSON(clientReq);
-	response :=
+	requestHeaders := r.Header
+	reqId := generateRandomId(6)
+	clientReq := HTTPReq{ID: reqId, Method: method, Body: bodyBytes, Path: Path, Headers: requestHeaders}
+	responseChan := make(chan HTTPRes)
+	pendingResponses.Store(clientReq.ID, responseChan)
+	tunnelToFind.WriteJSON(clientReq)
+	response := <-responseChan
+	for k, vv := range response.Headers {
+		for _, v := range vv {
+			w.Header().Add(k, v)
+		}
+	}
+	w.WriteHeader(response.StatusCode)
+	w.Write(response.Body)
 }
 
 func main() {
-	fmt.Scanf("http --port %s", &targetPort)
-	fmt.Println("Will create tunnel to localhost:" + targetPort)
 	http.HandleFunc("/connect", handleTunnelClient)
+	http.HandleFunc("/", handleExternalReqs)
 	serverPort = ":8080"
 	fmt.Println("Server started at localhost:" + serverPort)
 	err := http.ListenAndServe(serverPort, nil)

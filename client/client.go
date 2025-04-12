@@ -86,7 +86,7 @@ func listenForMessages(conn *websocket.Conn) {
 			fmt.Println("Error trying to write json to server err: " + err.Error())
 			break
 		}
-		fmt.Printf("Got the request %s %s", localRequest.Method, localRequest.URL.Path)
+		fmt.Printf("Got the request %s %s", localRequest.Method, URL)
 	}
 }
 

@@ -60,7 +60,7 @@ func listenForMessages(conn *websocket.Conn) {
 			break
 		}
 		pathWithoutId := strings.Split(req.Path, "/")[2]
-		URL := "http://localhost:" + myport + pathWithoutId
+		URL := "http://localhost:" + myport + "/" + pathWithoutId
 		fmt.Println(URL)
 		localRequest, err := http.NewRequest(req.Method, URL, bytes.NewReader(req.Body))
 		if err != nil {

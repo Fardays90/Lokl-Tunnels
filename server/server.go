@@ -18,6 +18,7 @@ var charset = "abcdefghijklmnoqprstyxz1234567890"
 var serverPort string
 var upgrader = websocket.Upgrader{}
 var pendingResponses = sync.Map{}
+var mutex = &sync.Mutex{}
 
 type HTTPReq struct {
 	ID      string              `json:"id"`
@@ -34,6 +35,10 @@ type HTTPRes struct {
 	Headers    map[string][]string `json:"headers"`
 }
 
+type idJson struct {
+	Id string `json:"id"`
+}
+
 func generateRandomId(length int) string {
 	id := make([]byte, length)
 	for i := range id {
@@ -41,6 +46,7 @@ func generateRandomId(length int) string {
 	}
 	return string(id)
 }
+
 func handleTunnelClient(w http.ResponseWriter, r *http.Request) {
 	// if r.Method != "POST" {
 	// 	log.Println("Please send a post request ")
@@ -52,9 +58,12 @@ func handleTunnelClient(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	uniqueId := generateRandomId(5)
+	mutex.Lock()
 	connections[uniqueId] = conn
-	log.Println("Tunnel has been made between aea and http://localhost:" + targetPort)
-	log.Println("Your path is http://localhost" + serverPort + "/" + uniqueId + "/")
+	mutex.Unlock()
+	uniqueIdJson := idJson{Id: uniqueId}
+	conn.WriteJSON(uniqueIdJson)
+	log.Println("The path is http://localhost" + serverPort + "/" + uniqueId + "/")
 	// uniqueIdBytes := []byte(uniqueId)
 	// w.Write(uniqueIdBytes)
 	for {
@@ -81,8 +90,14 @@ func handleTunnelClient(w http.ResponseWriter, r *http.Request) {
 func handleExternalReqs(w http.ResponseWriter, r *http.Request) {
 	id := strings.Split(r.URL.Path, "/")[1]
 	Path := r.URL.Path
+	if id == "favicon.ico" {
+		log.Println("Ignoring favicon request.")
+		return
+	}
 	log.Println("Making req to -> " + id)
+	mutex.Lock()
 	tunnelToFind, found := connections[id]
+	mutex.Unlock()
 	if !found {
 		log.Println("Tunnel does not exist or wrong id")
 		return

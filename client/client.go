@@ -12,6 +12,7 @@ import (
 
 var myport string
 var myId string
+var myConn *websocket.Conn
 
 type HTTPReq struct {
 	ID      string              `json:"id"`
@@ -26,6 +27,10 @@ type HTTPRes struct {
 	StatusCode int                 `json:"status_code"`
 	Body       []byte              `json:"body"`
 	Headers    map[string][]string `json:"headers"`
+}
+
+type idJson struct {
+	Id string `json:"id"`
 }
 
 func tunnelClient() {
@@ -52,6 +57,14 @@ func tunnelClient() {
 }
 func listenForMessages(conn *websocket.Conn) {
 	fmt.Println("Waiting for requests")
+	var sentId idJson
+	err := conn.ReadJSON(&sentId)
+	if err != nil {
+		fmt.Println("Error trying to read id")
+		return
+	}
+	fmt.Println("Tunnel has been set up.")
+	fmt.Println("Your link: http://localhost:8080/" + sentId.Id)
 	for {
 		var req HTTPReq
 		err := conn.ReadJSON(&req)
@@ -92,9 +105,10 @@ func listenForMessages(conn *websocket.Conn) {
 
 func main() {
 	fmt.Scanf("http --port %s", &myport)
-	fmt.Printf("Port: %s", myport)
+	fmt.Printf("Port: %s \n", myport)
 	// tunnelClient()
 	conn, _, err := websocket.DefaultDialer.Dial("ws://localhost:8080/connect", nil)
+
 	if err != nil {
 		fmt.Println("Websocket connection failed err: " + err.Error())
 		return

@@ -48,10 +48,6 @@ func generateRandomId(length int) string {
 }
 
 func handleTunnelClient(w http.ResponseWriter, r *http.Request) {
-	// if r.Method != "POST" {
-	// 	log.Println("Please send a post request ")
-	// 	return
-	// }
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		fmt.Println("Error trying to upgrade http connection to websocket err:" + err.Error())
@@ -64,8 +60,6 @@ func handleTunnelClient(w http.ResponseWriter, r *http.Request) {
 	uniqueIdJson := idJson{Id: uniqueId}
 	conn.WriteJSON(uniqueIdJson)
 	log.Println("The path is http://localhost" + serverPort + "/" + uniqueId + "/")
-	// uniqueIdBytes := []byte(uniqueId)
-	// w.Write(uniqueIdBytes)
 	for {
 		var response HTTPRes
 		err := conn.ReadJSON(&response)

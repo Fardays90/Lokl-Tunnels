@@ -40,7 +40,7 @@ func listenForMessages(conn *websocket.Conn) {
 		return
 	}
 	fmt.Println("Tunnel has been set up.")
-	fmt.Println("Your link: https://reverse-proxy-tunnel.onrender.com/" + sentId.Id)
+	fmt.Println("Your link: https://reverse-proxy-tunnel.onrender.com/" + sentId.Id + "/")
 	for {
 		var req HTTPReq
 		err := conn.ReadJSON(&req)
@@ -79,6 +79,7 @@ func listenForMessages(conn *websocket.Conn) {
 }
 
 func main() {
+	fmt.Println("Welcome to lokl cli please enter the command http --port <port> to create a tunnel")
 	fmt.Scanf("http --port %s", &myport)
 	fmt.Printf("Port: %s \n", myport)
 	conn, _, err := websocket.DefaultDialer.Dial("wss://reverse-proxy-tunnel.onrender.com/connect", nil)

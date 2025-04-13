@@ -5,10 +5,6 @@ This project creates a lightweight tunnel service that lets you expose your loca
 ## How It Works
 
 1. **Client CLI** (in `client/`):
-  Run the cli directly
-   ```bash
-   npx lokl-cli
-   ```
    - Sends a Dial request to the public server to initiate a tunnel.
    - Establishes a persistent **WebSocket** connection to the server.
    - Listens for incoming HTTP requests (proxied over the WebSocket).

@@ -1,19 +1,24 @@
 {
     "name": "lokl-cli",
-    "version": "1.0.1",
+    "version": "1.0.3",
     "description": "a lightweight tunnel service that lets you expose your local web server to the internet through a public-facing Go server. It works similarly to services like ngrok but is built with Go and WebSockets.",
     "bin": {
-      "lokl": "./bin/lokl.exe"
+        "lokl": "./bin/lokl.exe"
     },
     "files": [
-      "bin/"
+        "bin/"
     ],
-    "repository":{
+    "repository": {
         "type": "git",
         "url": "https://github.com/Fardays90/Reverse-Proxy-Tunnel/"
     },
-    "keywords": ["reverse-proxy", "tunnel", "cli", "go", "websocket"],
+    "keywords": [
+        "reverse-proxy",
+        "tunnel",
+        "cli",
+        "go",
+        "websocket"
+    ],
     "author": "fardays",
     "license": "MIT"
-  }
-  
+}

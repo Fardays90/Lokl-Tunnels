@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 
 	"github.com/gorilla/websocket"
 )
@@ -31,6 +30,8 @@ type idJson struct {
 	Id string `json:"id"`
 }
 
+var token string
+
 func listenForMessages(conn *websocket.Conn) {
 	fmt.Println("Waiting for requests")
 	var sentId idJson
@@ -40,16 +41,16 @@ func listenForMessages(conn *websocket.Conn) {
 		return
 	}
 	fmt.Println("Tunnel has been set up.")
-	fmt.Println("Your link: https://reverse-proxy-tunnel.onrender.com/" + sentId.Id + "/")
+	fmt.Println("Your link: http://" + sentId.Id + ".tunnels." + "fardays.com/")
 	for {
 		var req HTTPReq
 		err := conn.ReadJSON(&req)
 		if err != nil {
-			fmt.Println("Error trying to read the json sent from server")
+			fmt.Println("Error trying to read the json sent from server err:" + err.Error())
 			break
 		}
-		pathWithoutId := strings.Split(req.Path, "/")[2]
-		URL := "http://localhost:" + myport + "/" + pathWithoutId
+		path := req.Path
+		URL := "http://localhost:" + myport + path
 		localRequest, err := http.NewRequest(req.Method, URL, bytes.NewReader(req.Body))
 		if err != nil {
 			fmt.Println("Error trying to construct the http request err:" + err.Error())
@@ -82,7 +83,9 @@ func main() {
 	fmt.Println("Welcome to lokl cli please enter the command http --port <port> to create a tunnel")
 	fmt.Scanf("http --port %s", &myport)
 	fmt.Printf("Port: %s \n", myport)
-	conn, _, err := websocket.DefaultDialer.Dial("wss://reverse-proxy-tunnel.onrender.com/connect", nil)
+	headers := http.Header{}
+	headers.Add("Authorization", `Bearer `+token)
+	conn, _, err := websocket.DefaultDialer.Dial("ws://tunnels.fardays.com/connect", headers)
 	if err != nil {
 		fmt.Println("Websocket connection failed err: " + err.Error())
 		return

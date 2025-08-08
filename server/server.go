@@ -11,6 +11,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -87,6 +88,17 @@ func handleTunnelClient(w http.ResponseWriter, r *http.Request) {
 	mutex.Unlock()
 	uniqueIdJson := idJson{Id: uniqueId}
 	conn.WriteJSON(uniqueIdJson)
+	ticker := time.NewTicker(20 * time.Second)
+	go func() {
+		for range ticker.C {
+			err := conn.WriteControl(websocket.PingMessage, []byte("keepalive"), time.Now().Add(time.Second))
+			if err != nil {
+				fmt.Println("Exiting for: " + uniqueId)
+				ticker.Stop()
+				break
+			}
+		}
+	}()
 	for {
 		var response HTTPRes
 		err := conn.ReadJSON(&response)

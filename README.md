@@ -7,7 +7,6 @@ This project lets you expose local servers (e.g. `localhost:3000`) to the intern
 ## Usage 
 ```
 npx lokl-cli
-
 ```
 Or directly download the binary from [here](client/bin/) lokl-cli for linux 64 bit arch and lokl-cli.exe for windows 64 bit arch
 

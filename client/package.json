@@ -1,6 +1,6 @@
 {
     "name": "lokl-cli",
-    "version": "1.0.4",
+    "version": "1.0.7",
     "description": "a lightweight tunnel service that lets you expose your local web server to the internet through a public-facing Go server. It works similarly to services like ngrok but is built with Go and WebSockets.",
     "bin": {
         "lokl": "bin/lokl.js"
